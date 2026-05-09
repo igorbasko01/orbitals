@@ -60,7 +60,6 @@ class OrbitalsGame extends FlameGame {
       ),
     );
 
-    // await add(_core);
     await add(_earth);
     await addAll(_orbiters);
     await add(_title);
@@ -86,29 +85,6 @@ class OrbitalsGame extends FlameGame {
     for (final orbiter in _orbiters) {
       orbiter.setCenter(center);
     }
-  }
-}
-
-class CorePulse extends CircleComponent {
-  CorePulse()
-    : super(
-        radius: 42,
-        anchor: Anchor.center,
-        paint: Paint()..color = const Color(0xFF7FDBFF),
-      );
-
-  double _elapsed = 0;
-
-  @override
-  void update(double dt) {
-    super.update(dt);
-    _elapsed += dt;
-
-    final scaleFactor = 0.92 + math.sin(_elapsed * 2.4) * 0.08;
-    scale = Vector2.all(scaleFactor);
-
-    final shimmer = 160 + (math.sin(_elapsed * 3.2) * 60).round();
-    paint.color = Color.fromARGB(255, 125, 219, shimmer.clamp(0, 255));
   }
 }
 
