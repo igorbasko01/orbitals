@@ -1,9 +1,9 @@
-import 'dart:math' as math;
 
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:orbitals/earth.dart';
+import 'package:orbitals/orbiter.dart';
 
 void main() {
   runApp(GameWidget(game: OrbitalsGame()));
@@ -88,40 +88,3 @@ class OrbitalsGame extends FlameGame {
   }
 }
 
-class Orbiter extends CircleComponent {
-  Orbiter({
-    required this.orbitRadius,
-    required this.angularSpeed,
-    required this.angle,
-    required double radius,
-    required Color color,
-  }) : super(
-         radius: radius,
-         anchor: Anchor.center,
-         paint: Paint()..color = color,
-       );
-
-  final double orbitRadius;
-  final double angularSpeed;
-  double angle;
-  Vector2 _center = Vector2.zero();
-
-  void setCenter(Vector2 center) {
-    _center = center;
-    position = _positionForCurrentAngle();
-  }
-
-  @override
-  void update(double dt) {
-    super.update(dt);
-    angle += angularSpeed * dt;
-    position = _positionForCurrentAngle();
-  }
-
-  Vector2 _positionForCurrentAngle() {
-    return Vector2(
-      _center.x + math.cos(angle) * orbitRadius,
-      _center.y + math.sin(angle) * orbitRadius,
-    );
-  }
-}
