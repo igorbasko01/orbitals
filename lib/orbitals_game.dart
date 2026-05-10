@@ -32,24 +32,24 @@ class OrbitalsGame extends FlameGame {
 
     _orbiters = [
       Orbiter(
-        orbitRadius: 90,
+        orbitRadius: 50,
         angularSpeed: 1.1,
         angle: 0.2,
-        radius: 10,
+        radius: 5,
         color: const Color(0xFF80CBC4),
       ),
       Orbiter(
-        orbitRadius: 140,
+        orbitRadius: 70,
         angularSpeed: -0.75,
         angle: 2.2,
-        radius: 14,
+        radius: 5,
         color: const Color(0xFFFFAB91),
       ),
       Orbiter(
-        orbitRadius: 190,
+        orbitRadius: 90,
         angularSpeed: 0.45,
         angle: 4.5,
-        radius: 18,
+        radius: 5,
         color: const Color(0xFFFFF59D),
       ),
     ];
