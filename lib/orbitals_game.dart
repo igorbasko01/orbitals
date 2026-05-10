@@ -3,10 +3,10 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:orbitals/earth.dart';
 import 'package:orbitals/orbiter.dart';
+import 'package:orbitals/orbit_belt.dart';
 
 class OrbitalsGame extends FlameGame {
   late final Earth _earth;
-  late final List<Orbiter> _orbiters;
 
   /// Notifies listeners when the zoom level changes
   final ValueNotifier<double> zoomLevel = ValueNotifier(1.0);
@@ -29,37 +29,29 @@ class OrbitalsGame extends FlameGame {
 
     _earth = Earth(radius: 42, anchor: Anchor.center);
     _earth.position = Vector2.zero();
+    await world.add(_earth);
 
-    _orbiters = [
-      Orbiter(
-        orbitRadius: 50,
-        angularSpeed: 1.1,
-        startAngle: 0.2,
-        radius: 5,
-        color: const Color(0xFF80CBC4),
-      ),
-      Orbiter(
-        orbitRadius: 70,
-        angularSpeed: -0.75,
-        startAngle: 2.2,
-        radius: 5,
-        color: const Color(0xFFFFAB91),
-      ),
-      Orbiter(
-        orbitRadius: 90,
-        angularSpeed: 0.45,
-        startAngle: 4.5,
-        radius: 5,
-        color: const Color(0xFFFFF59D),
-      ),
+    // Create three belts with different speeds and radii
+    final belts = [
+      OrbitBelt(radius: 50, angularSpeed: 1.1, maxSlots: 8),
+      OrbitBelt(radius: 70, angularSpeed: -0.75, maxSlots: 12),
+      OrbitBelt(radius: 90, angularSpeed: 0.45, maxSlots: 16),
     ];
 
-    for (final orbiter in _orbiters) {
-      orbiter.setCenter(Vector2.zero());
-    }
+    // Add some initial orbiters to the belts
+    final colors = [
+      const Color(0xFF80CBC4),
+      const Color(0xFFFFAB91),
+      const Color(0xFFFFF59D),
+    ];
 
-    await world.add(_earth);
-    await world.addAll(_orbiters);
+    for (int i = 0; i < belts.length; i++) {
+      final belt = belts[i];
+      await world.add(belt);
+
+      // Add one orbiter to each belt initially
+      belt.addOrbiter(Orbiter(radius: 5, color: colors[i]));
+    }
   }
 
   @override
