@@ -33,9 +33,9 @@ class OrbitalsGame extends FlameGame {
 
     // Create three belts with different speeds and radii
     final belts = [
-      OrbitBelt(radius: 50, angularSpeed: 1.1, maxSlots: 8),
-      OrbitBelt(radius: 70, angularSpeed: -0.75, maxSlots: 12),
-      OrbitBelt(radius: 90, angularSpeed: 0.45, maxSlots: 16),
+      OrbitBelt(radius: 50, angularSpeed: 1.1, maxOrbiterRadius: 5.0),
+      OrbitBelt(radius: 70, angularSpeed: -0.75, maxOrbiterRadius: 5.0),
+      OrbitBelt(radius: 90, angularSpeed: 0.45, maxOrbiterRadius: 5.0),
     ];
 
     // Add some initial orbiters to the belts

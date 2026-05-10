@@ -6,12 +6,23 @@ class OrbitBelt extends PositionComponent {
   OrbitBelt({
     required this.radius,
     required this.angularSpeed,
-    required this.maxSlots,
+    required this.maxOrbiterRadius,
+    this.spacingFactor = 1.1,
   }) : super(anchor: Anchor.center);
 
   final double radius;
   final double angularSpeed;
-  final int maxSlots;
+  final double maxOrbiterRadius;
+
+  /// The padding factor between orbiters (1.0 = touching, > 1.0 = gap)
+  final double spacingFactor;
+
+  /// Calculates the number of orbiters that can physically fit on this belt
+  int get maxSlots {
+    final circumference = 2 * math.pi * radius;
+    final orbiterDiameter = maxOrbiterRadius * 2;
+    return (circumference / (orbiterDiameter * spacingFactor)).floor();
+  }
 
   /// Adds an orbiter to the next available slot on the belt.
   /// Returns true if successful, false if the belt is full.
