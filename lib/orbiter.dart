@@ -7,12 +7,12 @@ class Orbiter extends CircleComponent {
   Orbiter({
     required this.orbitRadius,
     required this.angularSpeed,
-    required double angle,
+    required double startAngle,
     required double radius,
     required Color color,
   }) : super(
          radius: radius,
-         angle: angle,
+         angle: startAngle,
          anchor: Anchor.center,
          paint: Paint()..color = color,
        );
