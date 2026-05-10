@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flame_test/flame_test.dart';
 import 'package:flutter/material.dart';
