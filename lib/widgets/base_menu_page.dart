@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../orbitals_game.dart';
 
-typedef PushCallback = void Function<T extends BaseMenuPage>();
+typedef PushCallback = void Function(BaseMenuPage page);
 
 /// Defines the contract for all menu pages in the game's HUD.
 abstract class BaseMenuPage {

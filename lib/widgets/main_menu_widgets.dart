@@ -15,7 +15,7 @@ class MainMenuPage extends BaseMenuPage {
     return HUDLayout(
       top: const _MainHeader(),
       bottom: _MainControls(
-        onZoomPressed: () => push<ZoomMenuPage>(),
+        onZoomPressed: () => push(ZoomMenuPage()),
       ),
     );
   }

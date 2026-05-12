@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:orbitals/orbitals_game.dart';
 import 'package:orbitals/widgets/base_menu_page.dart';
 import 'package:orbitals/widgets/main_menu_widgets.dart';
-import 'package:orbitals/widgets/zoom_widgets.dart';
 
 void main() {
   runApp(const OrbitalsApp());
@@ -31,50 +30,76 @@ class OrbitalsMainScreen extends StatefulWidget {
 
 class _OrbitalsMainScreenState extends State<OrbitalsMainScreen> {
   late final OrbitalsGame _game;
-
-  // The Declarative Menu Registry
-  final List<BaseMenuPage> _menuPages = [
-    MainMenuPage(),
-    ZoomMenuPage(),
-  ];
-
-  // Initialize history using the registry (default to the first page's name)
-  late final List<String> _history = [_menuPages.first.name];
+  
+  // The persistent map Flame uses to find builders
+  final Map<String, OverlayWidgetBuilder<OrbitalsGame>> _builders = {};
+  
+  // Navigation History
+  final List<String> _history = [];
 
   @override
   void initState() {
     super.initState();
     _game = OrbitalsGame();
+    
+    // Bootstrap the first page
+    _registerPage(MainMenuPage());
   }
 
-  void _pushOverlay<T extends BaseMenuPage>() {
-    // Find the name of the target page by its Type
-    final name = T.toString();
+  void _registerPage(BaseMenuPage page) {
+    _builders[page.name] = (context, game) => page.build(
+      context,
+      game,
+      _popOverlay,
+      _pushOverlay,
+    );
+    if (!_history.contains(page.name)) {
+      _history.add(page.name);
+    }
+  }
+
+  void _pushOverlay(BaseMenuPage page) {
+    if (_history.isNotEmpty && _history.last == page.name) return;
     
-    if (_history.last == name) return;
-    _game.overlays.remove(_history.last);
-    _history.add(name);
-    _game.overlays.add(name);
+    // Store the current top so we can remove it after the frame
+    final previousOverlay = _history.isNotEmpty ? _history.last : null;
+
+    setState(() {
+      // 1. Update our map so the NEXT build of GameWidget includes this builder
+      _builders[page.name] = (context, game) => page.build(
+        context,
+        game,
+        _popOverlay,
+        _pushOverlay,
+      );
+      _history.add(page.name);
+    });
+
+    // 2. Wait until the frame is rendered and GameWidget has received the new map
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        if (previousOverlay != null) {
+          _game.overlays.remove(previousOverlay);
+        }
+        _game.overlays.add(page.name);
+      }
+    });
   }
 
   void _popOverlay() {
     if (_history.length > 1) {
-      _game.overlays.remove(_history.removeLast());
-      _game.overlays.add(_history.last);
+      setState(() {
+        final poppedName = _history.removeLast();
+        _game.overlays.remove(poppedName);
+        
+        // Memory management: only remove if not used elsewhere
+        if (!_history.contains(poppedName)) {
+          _builders.remove(poppedName);
+        }
+        
+        _game.overlays.add(_history.last);
+      });
     }
-  }
-
-  /// Factory: Automatically builds the Flame overlay map from our page registry
-  Map<String, Widget Function(BuildContext, OrbitalsGame)> _buildOverlayMap() {
-    return {
-      for (final page in _menuPages)
-        page.name: (context, game) => page.build(
-              context,
-              game,
-              _popOverlay,
-              _pushOverlay,
-            ),
-    };
   }
 
   @override
@@ -84,11 +109,10 @@ class _OrbitalsMainScreenState extends State<OrbitalsMainScreen> {
       body: SafeArea(
         child: GameWidget<OrbitalsGame>(
           game: _game,
-          overlayBuilderMap: _buildOverlayMap(),
-          initialActiveOverlays: [_menuPages.first.name],
+          overlayBuilderMap: _builders,
+          initialActiveOverlays: [_history.first],
         ),
       ),
     );
   }
 }
-
