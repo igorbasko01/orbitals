@@ -2,6 +2,8 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:orbitals/orbitals_game.dart';
+import 'package:orbitals/widgets/main_menu_widgets.dart';
+import 'package:orbitals/widgets/zoom_widgets.dart';
 
 void main() {
   runApp(const OrbitalsApp());
@@ -26,8 +28,14 @@ class OrbitalsMainScreen extends StatefulWidget {
   State<OrbitalsMainScreen> createState() => _OrbitalsMainScreenState();
 }
 
+class OverlayNames {
+  static const String main = 'main';
+  static const String zoom = 'zoom';
+}
+
 class _OrbitalsMainScreenState extends State<OrbitalsMainScreen> {
   late final OrbitalsGame _game;
+  final List<String> _history = [OverlayNames.main];
 
   @override
   void initState() {
@@ -35,144 +43,82 @@ class _OrbitalsMainScreenState extends State<OrbitalsMainScreen> {
     _game = OrbitalsGame();
   }
 
+  void _pushOverlay(String name) {
+    if (_history.last == name) return;
+    _game.overlays.remove(_history.last);
+    _history.add(name);
+    _game.overlays.add(name);
+  }
+
+  void _popOverlay() {
+    if (_history.length > 1) {
+      _game.overlays.remove(_history.removeLast());
+      _game.overlays.add(_history.last);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF050816),
       body: SafeArea(
-        child: Column(
-          children: [
-            Container(
-              height: 100,
-              alignment: Alignment.center,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    'ORBITALS',
-                    style: TextStyle(
-                      color: Color(0xFFE8F1FF),
-                      fontSize: 28,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 4,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  ValueListenableBuilder<double>(
-                    valueListenable: _game.zoomLevel,
-                    builder: (context, zoom, child) {
-                      return Text(
-                        'ZOOM: ${zoom.toStringAsFixed(2)}x',
-                        style: TextStyle(
-                          color: const Color(0xFFE8F1FF).withValues(alpha: 0.6),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 2,
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-
-            // Middle Section: Game with 1:1 Aspect Ratio
-            Expanded(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: AspectRatio(
-                    aspectRatio: 1.0,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: const Color(0xFFE8F1FF).withValues(alpha: 0.1),
-                          width: 1,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: GameWidget(game: _game),
-                    ),
+        child: GameWidget<OrbitalsGame>(
+          game: _game,
+          overlayBuilderMap: {
+            OverlayNames.main: (context, game) => _OverlayLayout(
+                  top: const MainHeader(),
+                  bottom: MainControls(
+                    onZoomPressed: () => _pushOverlay(OverlayNames.zoom),
                   ),
                 ),
-              ),
-            ),
-
-            // Bottom Section: Menus
-            Container(
-              height: 120,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  // Zoom Out Button
-                  _MenuButton(
-                    onPressed: () => _game.zoomOut(),
-                    icon: Icons.remove,
-                    label: 'OUT',
+            OverlayNames.zoom: (context, game) => _OverlayLayout(
+                  top: ZoomHeader(game: game),
+                  bottom: ZoomControls(
+                    game: game,
+                    onBack: _popOverlay,
                   ),
-
-                  // Reset Zoom Button
-                  _MenuButton(
-                    onPressed: () => _game.resetZoom(),
-                    icon: Icons.zoom_out_map,
-                    label: 'RESET',
-                    isPrimary: true,
-                  ),
-
-                  // Zoom In Button
-                  _MenuButton(
-                    onPressed: () => _game.zoomIn(),
-                    icon: Icons.add,
-                    label: 'IN',
-                  ),
-                ],
-              ),
-            ),
-          ],
+                ),
+          },
+          initialActiveOverlays: const [OverlayNames.main],
         ),
       ),
     );
   }
 }
 
-class _MenuButton extends StatelessWidget {
-  final VoidCallback onPressed;
-  final IconData icon;
-  final String label;
-  final bool isPrimary;
+/// A simple layout shared by all game overlays to keep top/bottom split
+class _OverlayLayout extends StatelessWidget {
+  final Widget top;
+  final Widget bottom;
 
-  const _MenuButton({
-    required this.onPressed,
-    required this.icon,
-    required this.label,
-    this.isPrimary = false,
+  const _OverlayLayout({
+    required this.top,
+    required this.bottom,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton.icon(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: isPrimary ? const Color(0xFF1A237E) : const Color(0xFF283593).withValues(alpha: 0.5),
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-      icon: Icon(icon, size: 18),
-      label: Text(
-        label,
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 12,
-          letterSpacing: 1.1,
-        ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 0),
+      child: Column(
+        children: [
+          // Top HUD Section
+          Container(
+            height: 100,
+            alignment: Alignment.center,
+            child: top,
+          ),
+
+          // Transparent middle section (The Game is visible here)
+          const Expanded(child: SizedBox.shrink()),
+
+          // Bottom HUD Section
+          Container(
+            height: 120,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: bottom,
+          ),
+        ],
       ),
     );
   }
