@@ -12,7 +12,7 @@ class MainMenuPage extends BaseMenuPage {
     VoidCallback pop,
     PushCallback push,
   ) {
-    return _OverlayLayout(
+    return HUDLayout(
       top: const _MainHeader(),
       bottom: _MainControls(
         onZoomPressed: () => push<ZoomMenuPage>(),
@@ -95,35 +95,6 @@ class _MainControls extends StatelessWidget {
           icon: Icons.zoom_in,
           label: 'ZOOM',
           isPrimary: true,
-        ),
-      ],
-    );
-  }
-}
-
-class _OverlayLayout extends StatelessWidget {
-  final Widget top;
-  final Widget bottom;
-
-  const _OverlayLayout({
-    required this.top,
-    required this.bottom,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          height: 100,
-          alignment: Alignment.center,
-          child: top,
-        ),
-        const Expanded(child: SizedBox.shrink()),
-        Container(
-          height: 120,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: bottom,
         ),
       ],
     );

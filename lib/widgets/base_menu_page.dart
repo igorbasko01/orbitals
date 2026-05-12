@@ -17,3 +17,34 @@ abstract class BaseMenuPage {
     PushCallback push,
   );
 }
+
+/// A shared layout for all game overlays that maintains the top/bottom HUD split.
+class HUDLayout extends StatelessWidget {
+  final Widget top;
+  final Widget bottom;
+
+  const HUDLayout({
+    super.key,
+    required this.top,
+    required this.bottom,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          height: 100,
+          alignment: Alignment.center,
+          child: top,
+        ),
+        const Expanded(child: SizedBox.shrink()),
+        Container(
+          height: 120,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: bottom,
+        ),
+      ],
+    );
+  }
+}
