@@ -2,6 +2,8 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:orbitals/orbitals_game.dart';
+import 'package:orbitals/widgets/base_menu_page.dart';
+import 'package:orbitals/widgets/main_menu_widgets.dart';
 
 void main() {
   runApp(const OrbitalsApp());
@@ -28,11 +30,76 @@ class OrbitalsMainScreen extends StatefulWidget {
 
 class _OrbitalsMainScreenState extends State<OrbitalsMainScreen> {
   late final OrbitalsGame _game;
+  
+  // The persistent map Flame uses to find builders
+  final Map<String, OverlayWidgetBuilder<OrbitalsGame>> _builders = {};
+  
+  // Navigation History
+  final List<String> _history = [];
 
   @override
   void initState() {
     super.initState();
     _game = OrbitalsGame();
+    
+    // Bootstrap the first page
+    _registerPage(MainMenuPage());
+  }
+
+  void _registerPage(BaseMenuPage page) {
+    _builders[page.name] = (context, game) => page.build(
+      context,
+      game,
+      _popOverlay,
+      _pushOverlay,
+    );
+    if (!_history.contains(page.name)) {
+      _history.add(page.name);
+    }
+  }
+
+  void _pushOverlay(BaseMenuPage page) {
+    if (_history.isNotEmpty && _history.last == page.name) return;
+    
+    // Store the current top so we can remove it after the frame
+    final previousOverlay = _history.isNotEmpty ? _history.last : null;
+
+    setState(() {
+      // 1. Update our map so the NEXT build of GameWidget includes this builder
+      _builders[page.name] = (context, game) => page.build(
+        context,
+        game,
+        _popOverlay,
+        _pushOverlay,
+      );
+      _history.add(page.name);
+    });
+
+    // 2. Wait until the frame is rendered and GameWidget has received the new map
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        if (previousOverlay != null) {
+          _game.overlays.remove(previousOverlay);
+        }
+        _game.overlays.add(page.name);
+      }
+    });
+  }
+
+  void _popOverlay() {
+    if (_history.length > 1) {
+      setState(() {
+        final poppedName = _history.removeLast();
+        _game.overlays.remove(poppedName);
+        
+        // Memory management: only remove if not used elsewhere
+        if (!_history.contains(poppedName)) {
+          _builders.remove(poppedName);
+        }
+        
+        _game.overlays.add(_history.last);
+      });
+    }
   }
 
   @override
@@ -40,141 +107,12 @@ class _OrbitalsMainScreenState extends State<OrbitalsMainScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF050816),
       body: SafeArea(
-        child: Column(
-          children: [
-            Container(
-              height: 100,
-              alignment: Alignment.center,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    'ORBITALS',
-                    style: TextStyle(
-                      color: Color(0xFFE8F1FF),
-                      fontSize: 28,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 4,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  ValueListenableBuilder<double>(
-                    valueListenable: _game.zoomLevel,
-                    builder: (context, zoom, child) {
-                      return Text(
-                        'ZOOM: ${zoom.toStringAsFixed(2)}x',
-                        style: TextStyle(
-                          color: const Color(0xFFE8F1FF).withValues(alpha: 0.6),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 2,
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-
-            // Middle Section: Game with 1:1 Aspect Ratio
-            Expanded(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: AspectRatio(
-                    aspectRatio: 1.0,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: const Color(0xFFE8F1FF).withValues(alpha: 0.1),
-                          width: 1,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: GameWidget(game: _game),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            // Bottom Section: Menus
-            Container(
-              height: 120,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  // Zoom Out Button
-                  _MenuButton(
-                    onPressed: () => _game.zoomOut(),
-                    icon: Icons.remove,
-                    label: 'OUT',
-                  ),
-
-                  // Reset Zoom Button
-                  _MenuButton(
-                    onPressed: () => _game.resetZoom(),
-                    icon: Icons.zoom_out_map,
-                    label: 'RESET',
-                    isPrimary: true,
-                  ),
-
-                  // Zoom In Button
-                  _MenuButton(
-                    onPressed: () => _game.zoomIn(),
-                    icon: Icons.add,
-                    label: 'IN',
-                  ),
-                ],
-              ),
-            ),
-          ],
+        child: GameWidget<OrbitalsGame>(
+          game: _game,
+          overlayBuilderMap: _builders,
+          initialActiveOverlays: [_history.first],
         ),
       ),
     );
   }
 }
-
-class _MenuButton extends StatelessWidget {
-  final VoidCallback onPressed;
-  final IconData icon;
-  final String label;
-  final bool isPrimary;
-
-  const _MenuButton({
-    required this.onPressed,
-    required this.icon,
-    required this.label,
-    this.isPrimary = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton.icon(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: isPrimary ? const Color(0xFF1A237E) : const Color(0xFF283593).withValues(alpha: 0.5),
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 12,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-      icon: Icon(icon, size: 18),
-      label: Text(
-        label,
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 12,
-          letterSpacing: 1.1,
-        ),
-      ),
-    );
-  }
-}
-
