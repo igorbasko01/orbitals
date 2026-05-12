@@ -2,6 +2,7 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:orbitals/orbitals_game.dart';
+import 'package:orbitals/widgets/base_menu_page.dart';
 import 'package:orbitals/widgets/main_menu_widgets.dart';
 import 'package:orbitals/widgets/zoom_widgets.dart';
 
@@ -28,14 +29,17 @@ class OrbitalsMainScreen extends StatefulWidget {
   State<OrbitalsMainScreen> createState() => _OrbitalsMainScreenState();
 }
 
-class OverlayNames {
-  static const String main = 'main';
-  static const String zoom = 'zoom';
-}
-
 class _OrbitalsMainScreenState extends State<OrbitalsMainScreen> {
   late final OrbitalsGame _game;
-  final List<String> _history = [OverlayNames.main];
+
+  // The Declarative Menu Registry
+  final List<BaseMenuPage> _menuPages = [
+    MainMenuPage(),
+    ZoomMenuPage(),
+  ];
+
+  // Initialize history using the registry (default to the first page's name)
+  late final List<String> _history = [_menuPages.first.name];
 
   @override
   void initState() {
@@ -43,7 +47,10 @@ class _OrbitalsMainScreenState extends State<OrbitalsMainScreen> {
     _game = OrbitalsGame();
   }
 
-  void _pushOverlay(String name) {
+  void _pushOverlay<T extends BaseMenuPage>() {
+    // Find the name of the target page by its Type
+    final name = T.toString();
+    
     if (_history.last == name) return;
     _game.overlays.remove(_history.last);
     _history.add(name);
@@ -57,6 +64,19 @@ class _OrbitalsMainScreenState extends State<OrbitalsMainScreen> {
     }
   }
 
+  /// Factory: Automatically builds the Flame overlay map from our page registry
+  Map<String, Widget Function(BuildContext, OrbitalsGame)> _buildOverlayMap() {
+    return {
+      for (final page in _menuPages)
+        page.name: (context, game) => page.build(
+              context,
+              game,
+              _popOverlay,
+              _pushOverlay,
+            ),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -64,61 +84,9 @@ class _OrbitalsMainScreenState extends State<OrbitalsMainScreen> {
       body: SafeArea(
         child: GameWidget<OrbitalsGame>(
           game: _game,
-          overlayBuilderMap: {
-            OverlayNames.main: (context, game) => _OverlayLayout(
-                  top: const MainHeader(),
-                  bottom: MainControls(
-                    onZoomPressed: () => _pushOverlay(OverlayNames.zoom),
-                  ),
-                ),
-            OverlayNames.zoom: (context, game) => _OverlayLayout(
-                  top: ZoomHeader(game: game),
-                  bottom: ZoomControls(
-                    game: game,
-                    onBack: _popOverlay,
-                  ),
-                ),
-          },
-          initialActiveOverlays: const [OverlayNames.main],
+          overlayBuilderMap: _buildOverlayMap(),
+          initialActiveOverlays: [_menuPages.first.name],
         ),
-      ),
-    );
-  }
-}
-
-/// A simple layout shared by all game overlays to keep top/bottom split
-class _OverlayLayout extends StatelessWidget {
-  final Widget top;
-  final Widget bottom;
-
-  const _OverlayLayout({
-    required this.top,
-    required this.bottom,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 0),
-      child: Column(
-        children: [
-          // Top HUD Section
-          Container(
-            height: 100,
-            alignment: Alignment.center,
-            child: top,
-          ),
-
-          // Transparent middle section (The Game is visible here)
-          const Expanded(child: SizedBox.shrink()),
-
-          // Bottom HUD Section
-          Container(
-            height: 120,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: bottom,
-          ),
-        ],
       ),
     );
   }

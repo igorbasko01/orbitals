@@ -1,12 +1,30 @@
 import 'package:flutter/material.dart';
 import '../orbitals_game.dart';
+import 'base_menu_page.dart';
 import 'menu_button.dart';
 
-class ZoomHeader extends StatelessWidget {
+class ZoomMenuPage extends BaseMenuPage {
+  @override
+  Widget build(
+    BuildContext context,
+    OrbitalsGame game,
+    VoidCallback pop,
+    PushCallback push,
+  ) {
+    return _OverlayLayout(
+      top: _ZoomHeader(game: game),
+      bottom: _ZoomControls(
+        game: game,
+        onBack: pop,
+      ),
+    );
+  }
+}
+
+class _ZoomHeader extends StatelessWidget {
   final OrbitalsGame game;
 
-  const ZoomHeader({
-    super.key,
+  const _ZoomHeader({
     required this.game,
   });
 
@@ -66,12 +84,11 @@ class ZoomHeader extends StatelessWidget {
   }
 }
 
-class ZoomControls extends StatelessWidget {
+class _ZoomControls extends StatelessWidget {
   final OrbitalsGame game;
   final VoidCallback onBack;
 
-  const ZoomControls({
-    super.key,
+  const _ZoomControls({
     required this.game,
     required this.onBack,
   });
@@ -101,6 +118,35 @@ class ZoomControls extends StatelessWidget {
           onPressed: () => game.zoomIn(),
           icon: Icons.add,
           label: 'IN',
+        ),
+      ],
+    );
+  }
+}
+
+class _OverlayLayout extends StatelessWidget {
+  final Widget top;
+  final Widget bottom;
+
+  const _OverlayLayout({
+    required this.top,
+    required this.bottom,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          height: 100,
+          alignment: Alignment.center,
+          child: top,
+        ),
+        const Expanded(child: SizedBox.shrink()),
+        Container(
+          height: 120,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: bottom,
         ),
       ],
     );
